@@ -29,3 +29,6 @@ curl -X POST -H 'Content-Type: application/xml' 'https://ss929090-2ape21mx-eu-we
 
 xsltproc -o dyrevelderdsloven-op.xml --encoding UTF-8 4-alle-lover.xslt dyrevelferdsloven.html
 xmllint -o dyrevelderdsloven-op-pretty.xml --encode utf-8 --format dyrevelderdsloven-op.xml
+
+curl -X POST -H 'Content-Type: application/xml' 'https://ss929090-2ape21mx-eu-west-1-aws.searchstax.com/solr/juridika-lover-test/update?commit=true' --data-binary @lov-folketrygdloven-op.xml -u $SOLR_USERNAME:$SOLR_PASSWORD
+
