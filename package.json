@@ -1,0 +1,23 @@
+{
+  "name": "solr_html_parser",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "cheerio": "^1.0.0",
+    "nanoid": "^5.0.7",
+    "typescript": "^5.5.4",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/cheerio": "^0.22.35",
+    "@types/node": "^22.5.1"
+  }
+}

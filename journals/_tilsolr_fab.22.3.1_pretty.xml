@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<add>
+  <doc>
+    <field name="id">fab/volum-22/utgave-3</field>
+    <field name="nodeType">journal</field>
+    <field name="journal_id">fab</field>
+    <field name="volume">22</field>
+    <field name="issue">3</field>
+    <field name="_text_ngram_"/>
+  </doc>
+  <doc>
+    <field name="id">fab/volum-22/utgave-3/artikkel-1</field>
+    <field name="doi">10.18261/fab.22.3.1</field>
+    <field name="journal_id">fab</field>
+    <field name="nodeType">journal-article</field>
+    <field name="_nest_parent_">fab/volum-22/utgave-3</field>
+    <field name="volume">22</field>
+    <field name="issue">3</field>
+    <field name="article_title">Med barn skal loven bygges</field>
+    <field name="subtitle"/>
+    <field name="_text_ngram_">Med barn skal loven bygges</field>
+    <field name="author_name">Kirsten Kolstad Kvalø</field>
+    <field name="open_access">Nei</field>
+    <field name="publication_date">2024-10-15</field>
+    <field name="start_page">180</field>
+    <field name="end_page">184</field>
+    <field name="language">no</field>
+    <field name="bodytext"/>
+  </doc>
+</add>

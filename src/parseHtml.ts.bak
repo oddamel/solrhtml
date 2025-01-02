@@ -1,0 +1,97 @@
+import * as cheerio from 'cheerio';
+import { readFileSync, writeFileSync } from 'fs';
+
+interface Paragraph {
+    paragraph_title: string;
+    paragraph_text: string;
+}
+
+interface Chapter {
+    chapter_title: string;
+    chapter_text: string;
+    paragraphs: any[];  // Array to hold paragraph child documents
+}
+
+interface Section {
+    section_title: string;
+    section_text: string;
+    chapters: any[];  // Array to hold chapter child documents
+}
+
+interface LawDocument {
+    title: string;
+    id: string;
+    sections?: any[];  // Array to hold section child documents if necessary
+    chapters?: any[];
+    paragraphs?: any[];
+}
+
+const baseFileName = process.argv[2];
+const lawFormatType = process.argv[3];
+const inputFileName = `${baseFileName}.html`;
+const outputFileName = `${baseFileName}.json`;
+
+const html = readFileSync(inputFileName, 'utf8');
+const $ = cheerio.load(html);
+
+const lawTitle = $('h1').first().text().trim();
+const lawId = $('dd.lastChangedBy a').first().attr('href') || 'default-value';
+
+const document: LawDocument = {
+    title: lawTitle,
+    id: lawId
+};
+
+if (lawFormatType === 's') {
+    // Similar to previously provided section parsing logic
+}
+
+else if (lawFormatType === 'c') {
+    document.chapters = $('h2').map((_, h2) => {
+        const chapter = $(h2);
+        const chapterTitle = chapter.text().trim();
+        const chapterText = chapter.nextUntil('h2', 'p').text().trim(); // Text before next chapter
+        const paragraphs = chapter.nextUntil('h2', 'article.legalArticle').map((_, article) => {
+            const articleElement = $(article);
+            return {
+                paragraph_title: articleElement.find('h3').first().text().trim(),
+                paragraph_text: articleElement.children().not('h3').map((i, el) => $(el).text().trim()).get().join(' '),
+                _type: "paragraph"
+            };
+        }).get();
+        return {
+            chapter_title: chapterTitle,
+            chapter_text: chapterText,
+            _childDocuments_: paragraphs,
+            _type: "chapter"
+        };
+    }).get();
+}
+
+else if (lawFormatType === 'p') {
+    document.paragraphs = $('h2, h3').map((_, header) => {
+        const headerElement = $(header);
+        const paragraphTitle = headerElement.text().trim();
+        // Capture the text following the header until another header is reached
+        const paragraphText = headerElement.nextUntil('h2, h3').map((i, el) => $(el).text().trim()).get().join(' ');
+        return {
+            paragraph_title: paragraphTitle,
+            paragraph_text: paragraphText,
+            _type: "paragraph"
+        };
+    }).get();
+}
+
+// Prepare the document for Solr ingestion by adding the root document metadata
+const solrInput = {
+    add: {
+        doc: document,
+        boost: 1.0,    // Optional: Set a boost factor for relevancy scoring if needed
+        commitWithin: 1000,  // Optional: Commit within 1000 ms to make updates searchable almost real-time
+        overwrite: true  // Optional: Overwrite existing documents with the same ID
+    }
+};
+
+// Write the structured document to a JSON file
+writeFileSync(outputFileName, JSON.stringify(solrInput, null, 2), 'utf8');
+console.log(`Document parsed and structured for Solr, saved as ${outputFileName}.`);

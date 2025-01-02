@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<add>
+  <doc>
+    <field name="id">lov/2009-06-19-97</field>
+    <field name="title">Lov om folketrygd (folketrygdloven)</field>
+    <field name="nodeType">law</field>
+    <field name="sections">
+      <doc>
+        <field name="id"/>
+        <field name="title">Hvordan folketrygdloven er oppbygd</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+      <doc>
+        <field name="id"/>
+        <field name="title">Del I. Innledende bestemmelser</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+      <doc>
+        <field name="id"/>
+        <field name="title">Del II. Beregningsregler. Pensjonsgivende inntekt.</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+      <doc>
+        <field name="id"/>
+        <field name="title">Del III. Stønad under arbeidsløshet</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+      <doc>
+        <field name="id"/>
+        <field name="title">Del IV. Ytelser ved sykdom m.m.</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+      <doc>
+        <field name="id"/>
+        <field name="title">Del V. Ytelser knyttet til livsløp og familiesituasjon</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+      <doc>
+        <field name="id"/>
+        <field name="title">Del VI. Ytelser ved nådd pensjonsalder</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+      <doc>
+        <field name="id"/>
+        <field name="title">Del VII. Forvaltningsmessige bestemmelser</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+      <doc>
+        <field name="id"/>
+        <field name="title">Del VIII. Finansielle bestemmelser</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+      <doc>
+        <field name="id"/>
+        <field name="title">Del IX. Avsluttende bestemmelser</field>
+        <field name="nodeType">section</field>
+        <field name="chapters"/>
+      </doc>
+    </field>
+  </doc>
+</add>
