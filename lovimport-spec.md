@@ -66,7 +66,8 @@ Hvert Solr-dokument må inneholde:
 - `title`: Nodetittel (Node title)
 - `nodeType`: Nodetype (Node type: lov, del, kapittel, paragraf, etc.)
 - `_nest_parent_`: ID til foreldrenode (Parent node ID)
-- `bodytext`: Innholdstekst for ledd (Content text for subsections)
+- `bodytext`: Innholdstekst for elemente (Content text for subsections)
+- `bodytext_html`: Innholdstekst i full html (Content text for subsections)
 - `source`: Satt til "Lovdata" for lovdokumenter (Set to "Lovdata" for law documents)
 
 ### Ekstra Metadatafelter
@@ -134,3 +135,103 @@ For komplekse hierarkiske strukturer, bruk den dynamiske XSLT-implementasjonen s
 - Manglende påkrevde felter skal føre til importfeil
 - Ugyldige foreldrereferanser skal føre til importfeil
 - Alle feil skal logges med spesifikke feilmeldinger
+
+# Spesifikasjon i andre ord
+# Lovdata Importspesifikasjon (Utvidet Versjon)
+
+## 1. Overordnet Struktur
+
+En lov kan ha følgende hierarkiske struktur:
+
+```
+lov
+├── metadata (valgfritt)
+├── innledning (valgfritt)
+├── innholdsfortegnelse (valgfritt)
+├── [del]
+│    └── [underdel] (forutsetter del)
+│         └── [kapittel]
+│              └── [underkapittel] (forutsetter kapittel)
+│                   └── paragraf
+│                        └── [ledd]
+└── [paragraf] (minst én paragraf må finnes et eller annet sted)
+```
+
+## 2. Hierarkiske Regler
+
+### 2.1. Direkte under en lov
+Følgende elementer kan forekomme:
+- del
+- kapittel
+- paragraf
+
+### 2.2. Under en del
+Følgende elementer kan forekomme:
+- underdel
+- kapittel
+- paragraf
+
+### 2.3. Under et kapittel
+Følgende elementer kan forekomme:
+- underkapittel
+- paragraf
+
+### 2.4. Under en underdel
+Kun paragraf kan forekomme.
+
+### 2.5. Under en paragraf
+Kun ledd kan forekomme.
+
+### 2.6. Paragrafkrav
+Minst én paragraf må eksistere i loven, uavhengig av hvor den er plassert i hierarkiet.
+
+## 3. Elementbeskrivelser
+
+| Element            | Beskrivelse                                                   |
+|--------------------|---------------------------------------------------------------|
+| metadata           | Valgfritt element som inneholder informasjon om loven         |
+| innledning         | Valgfritt element som gir en introduksjon til loven           |
+| innholdsfortegnelse| Valgfritt element som lister opp lovens struktur              |
+| del                | Representerer en hovedinndeling av loven                      |
+| underdel           | En underinndeling av en del                                   |
+| kapittel           | En inndeling som kan forekomme direkte under loven eller del  |
+| underkapittel      | En underinndeling av et kapittel                              |
+| paragraf           | Den grunnleggende lovbestemmelsen                             |
+| ledd               | En underinndeling av en paragraf                              |
+
+## 4. ID-generering
+
+| Element      | ID-format                                                           |
+|--------------|---------------------------------------------------------------------|
+| Lov          | `lov-{lovnummer}`                                                   |
+| Del          | `lov-{lovnummer}/del-{romersk tall}`                                |
+| Underdel     | `lov-{lovnummer}/del-{romersk tall}/underdel-{nummer}`              |
+| Kapittel     | `lov-{lovnummer}/kapittel-{romersk tall}`                           |
+|              | eller `lov-{lovnummer}/del-{romersk tall}/kapittel-{romersk tall}`  |
+| Underkapittel| Samme som kapittel-ID, pluss `/underkapittel-{nummer}`              |
+| Paragraf     | `lov-{lovnummer}/[.../]paragraf-{nummer}`                           |
+| Ledd         | `{parent-paragraf-id}/ledd-{posisjon}`                              |
+
+## 5. Valideringsregler
+
+### 5.1. Strukturvalidering
+- Hvert element må følge de hierarkiske reglene beskrevet i seksjon 2.
+- Minst én paragraf må eksistere i loven.
+
+### 5.2. ID-validering
+- Hver ID må følge formatet beskrevet i seksjon 4.
+- ID-er må være unike innenfor loven.
+
+### 5.3. Innholdsvalidering
+- Paragrafer må ha innhold.
+- Ledd må ha innhold.
+
+## 6. Feilhåndtering
+
+| Feiltype                         | Håndtering                           |
+|----------------------------------|--------------------------------------|
+| Brudd på hierarkiske regler      | Rapporter strukturfeil               |
+| Manglende påkrevde elementer     | Rapporter ufullstendig lovstruktur   |
+| Ugyldig ID-format                | Rapporter ID-formatfeil              |
+| Manglende innhold i paragraf/ledd| Rapporter innholdsmangel             |
+```

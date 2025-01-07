@@ -1,23 +1,24 @@
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                version="1.0">
+<xsl:stylesheet
+        xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+        version="1.0"
+>
     <!--
-      Oppdatert XSLT for Lovdata -> Solr, nå med underkapittel (nodeType=subchapter).
-      Strukturen er:
-        del       -> part
-        underdel  -> subpart
-        kapittel  -> chapter
-        underkap  -> subchapter
-        paragraf  -> section
-        ledd      -> subsection
+      XSLT Explanation (no double-hyphens):
+      This XSLT transforms Lovdata HTML into <doc> elements for Solr with hierarchical IDs.
+      We rely on @data-name to check if it includes 'del', 'underdel', 'kap', 'underkap'.
+      If it's not found, we simply pass it down to children.
+      Paragraphs <article class='legalArticle'> => nodeType="section"
+      Ledd <article class='legalP'> => nodeType="subsection"
+      No consecutive hyphens in comments!
     -->
 
     <xsl:output method="xml" encoding="UTF-8" indent="yes"/>
 
-    <!-- ========== 1) ROOT-TEMPLATE ========== -->
+    <!-- (1) ROOT TEMPLATE -->
     <xsl:template match="/">
         <add>
             <doc>
-                <!-- ID for selve loven, basert på "LOV-xxxx" -->
+                <!-- ID for entire law -->
                 <field name="id">
                     <xsl:value-of select="concat('lov-', substring-after(//dd[@class='legacyID'], 'LOV-'))"/>
                 </field>
@@ -26,13 +27,11 @@
                 </field>
                 <field name="nodeType">law</field>
                 <field name="source">Lovdata</field>
-
-                <!-- Timestamp om ønskelig -->
                 <field name="timestamp">
-                    <xsl:value-of select="substring-before(//dd[@class='xmlGenerated'], ' ')"/>
+                    <xsl:value-of select="substring-before(//dd[@class='xmlGenerated'],' ')"/>
                 </field>
 
-                <!-- Start prosessering av <section>, parentId => "lov-XXXX" -->
+                <!-- Recurse on all <section> top-level, passing parent = entire-lov ID -->
                 <xsl:apply-templates select="//section">
                     <xsl:with-param name="parentId"
                                     select="concat('lov-', substring-after(//dd[@class='legacyID'], 'LOV-'))"/>
@@ -41,12 +40,12 @@
         </add>
     </xsl:template>
 
-    <!-- ========== 2) SECTION ========== -->
+    <!-- (2) SECTION => might be del, underdel, kapittel, underkapittel -->
     <xsl:template match="section">
         <xsl:param name="parentId"/>
 
-        <!-- Hent @data-name, f.eks. "delIII", "kapI", "underkap2" ... -->
         <xsl:variable name="dnRaw" select="@data-name"/>
+        <!-- remove underscores so "kap_II" => "kap-II" -->
         <xsl:variable name="dnClean" select="translate($dnRaw, '_', '-')"/>
 
         <xsl:choose>
@@ -57,22 +56,18 @@
 
                 <doc>
                     <field name="id"><xsl:value-of select="$currentId"/></field>
-                    <field name="title"><xsl:value-of select="h2"/></field>
+                    <field name="title">
+                        <xsl:value-of select="(h1|h2|h3|h4|h5|h6)[1]"/>
+                    </field>
                     <field name="nodeType">part</field>
-                    <field name="_nest_parent_">
-                        <xsl:value-of select="$parentId"/>
-                    </field>
-
-                    <field name="bodytext">
-                        <xsl:value-of select="."/>
-                    </field>
+                    <field name="_nest_parent_"><xsl:value-of select="$parentId"/></field>
+                    <field name="bodytext"><xsl:value-of select="."/></field>
                     <field name="bodytext_html">
                         <xsl:copy-of select="node()"/>
                     </field>
-                    <field name="text_ngram">
-                        <xsl:value-of select="."/>
-                    </field>
+                    <field name="text_ngram"><xsl:value-of select="."/></field>
 
+                    <!-- Recurse to child sections/articles -->
                     <xsl:apply-templates select="section|article">
                         <xsl:with-param name="parentId" select="$currentId"/>
                     </xsl:apply-templates>
@@ -86,21 +81,16 @@
 
                 <doc>
                     <field name="id"><xsl:value-of select="$currentId"/></field>
-                    <field name="title"><xsl:value-of select="h2"/></field>
+                    <field name="title">
+                        <xsl:value-of select="(h1|h2|h3|h4|h5|h6)[1]"/>
+                    </field>
                     <field name="nodeType">subpart</field>
-                    <field name="_nest_parent_">
-                        <xsl:value-of select="$parentId"/>
-                    </field>
-
-                    <field name="bodytext">
-                        <xsl:value-of select="."/>
-                    </field>
+                    <field name="_nest_parent_"><xsl:value-of select="$parentId"/></field>
+                    <field name="bodytext"><xsl:value-of select="."/></field>
                     <field name="bodytext_html">
                         <xsl:copy-of select="node()"/>
                     </field>
-                    <field name="text_ngram">
-                        <xsl:value-of select="."/>
-                    </field>
+                    <field name="text_ngram"><xsl:value-of select="."/></field>
 
                     <xsl:apply-templates select="section|article">
                         <xsl:with-param name="parentId" select="$currentId"/>
@@ -108,33 +98,23 @@
                 </doc>
             </xsl:when>
 
-            <!-- KAPITTEL -->
+            <!-- KAPITTEL (not underkap) -->
             <xsl:when test="contains($dnClean, 'kap') and not(contains($dnClean, 'underkap'))">
-                <!--
-                  NB! `contains($dnClean, 'kap')` vil også treffe "underkap",
-                  så vi legger til en test for `not(contains($dnClean,'underkap'))`
-                  for å ikke kollidere med underkapittel.
-                -->
                 <xsl:variable name="suffix" select="substring-after($dnClean, 'kap')"/>
                 <xsl:variable name="currentId" select="concat($parentId, '/kapittel-', $suffix)"/>
 
                 <doc>
                     <field name="id"><xsl:value-of select="$currentId"/></field>
-                    <field name="title"><xsl:value-of select="h2"/></field>
+                    <field name="title">
+                        <xsl:value-of select="(h1|h2|h3|h4|h5|h6)[1]"/>
+                    </field>
                     <field name="nodeType">chapter</field>
-                    <field name="_nest_parent_">
-                        <xsl:value-of select="$parentId"/>
-                    </field>
-
-                    <field name="bodytext">
-                        <xsl:value-of select="."/>
-                    </field>
+                    <field name="_nest_parent_"><xsl:value-of select="$parentId"/></field>
+                    <field name="bodytext"><xsl:value-of select="."/></field>
                     <field name="bodytext_html">
                         <xsl:copy-of select="node()"/>
                     </field>
-                    <field name="text_ngram">
-                        <xsl:value-of select="."/>
-                    </field>
+                    <field name="text_ngram"><xsl:value-of select="."/></field>
 
                     <xsl:apply-templates select="section|article">
                         <xsl:with-param name="parentId" select="$currentId"/>
@@ -149,31 +129,24 @@
 
                 <doc>
                     <field name="id"><xsl:value-of select="$currentId"/></field>
-                    <field name="title"><xsl:value-of select="h2"/></field>
-                    <!-- nodeType = subchapter -->
+                    <field name="title">
+                        <xsl:value-of select="(h1|h2|h3|h4|h5|h6)[1]"/>
+                    </field>
                     <field name="nodeType">subchapter</field>
-                    <field name="_nest_parent_">
-                        <xsl:value-of select="$parentId"/>
-                    </field>
-
-                    <field name="bodytext">
-                        <xsl:value-of select="."/>
-                    </field>
+                    <field name="_nest_parent_"><xsl:value-of select="$parentId"/></field>
+                    <field name="bodytext"><xsl:value-of select="."/></field>
                     <field name="bodytext_html">
                         <xsl:copy-of select="node()"/>
                     </field>
-                    <field name="text_ngram">
-                        <xsl:value-of select="."/>
-                    </field>
+                    <field name="text_ngram"><xsl:value-of select="."/></field>
 
-                    <!-- Rekursiv prosessering av children -->
                     <xsl:apply-templates select="section|article">
                         <xsl:with-param name="parentId" select="$currentId"/>
                     </xsl:apply-templates>
                 </doc>
             </xsl:when>
 
-            <!-- HVIS INGENTING TRAFF (eksempel: "annex1") => re-apply barne-noder -->
+            <!-- Otherwise: pass children with same parentId -->
             <xsl:otherwise>
                 <xsl:apply-templates select="section|article">
                     <xsl:with-param name="parentId" select="$parentId"/>
@@ -182,81 +155,72 @@
         </xsl:choose>
     </xsl:template>
 
-    <!-- ========== 3) ARTICLE class="legalArticle" (Paragraf) ========== -->
+    <!-- (3) article.legalArticle => paragraf (nodeType=section) -->
     <xsl:template match="article[@class='legalArticle']">
         <xsl:param name="parentId"/>
 
         <doc>
             <field name="id">
-                <!-- "§4-b" => "/paragraf-4-b" -->
                 <xsl:value-of select="
-                  concat($parentId, '/paragraf-',
-                    translate(substring-after(@data-partID, '§'), '_', '-')
-                  )
-                "/>
+          concat(
+            $parentId,
+            '/paragraf-',
+            translate(substring-after(@data-partID, '§'), '_', '-')
+          )
+        "/>
             </field>
             <field name="title">
-                <!-- "§4-b Tittel" -->
                 <xsl:value-of select="
-                  concat(h3/span[@class='legalArticleValue'], ' ',
-                         h3/span[@class='legalArticleTitle'])
-                "/>
+          concat(
+            h3/span[@class='legalArticleValue'],
+            ' ',
+            h3/span[@class='legalArticleTitle']
+          )
+        "/>
             </field>
             <field name="nodeType">section</field>
             <field name="_nest_parent_">
                 <xsl:value-of select="$parentId"/>
             </field>
 
-            <field name="bodytext">
-                <xsl:value-of select="."/>
-            </field>
+            <field name="bodytext"><xsl:value-of select="."/></field>
             <field name="bodytext_html">
                 <xsl:copy-of select="node()"/>
             </field>
-            <field name="text_ngram">
-                <xsl:value-of select="."/>
-            </field>
+            <field name="text_ngram"><xsl:value-of select="."/></field>
 
-            <!-- Ledd: <article class="legalP"> -->
+            <!-- Next level: <article class="legalP"> => ledd -->
             <xsl:apply-templates select=".//article[@class='legalP']">
                 <xsl:with-param name="parentId" select="
-                  concat($parentId, '/paragraf-',
-                         translate(substring-after(@data-partID, '§'), '_', '-')
-                  )
-                "/>
+          concat(
+            $parentId,
+            '/paragraf-',
+            translate(substring-after(@data-partID, '§'), '_', '-')
+          )
+        "/>
             </xsl:apply-templates>
         </doc>
     </xsl:template>
 
-    <!-- ========== 4) LEDD: <article class="legalP"> ========== -->
+    <!-- (4) article.legalP => nodeType=subsection -->
     <xsl:template match="article[@class='legalP']">
         <xsl:param name="parentId"/>
 
         <doc>
             <field name="id">
-                <!-- Teller ledd i rekkefølge. -->
                 <xsl:value-of select="concat($parentId, '/ledd-', position())"/>
             </field>
             <field name="nodeType">subsection</field>
-            <field name="_nest_parent_">
-                <xsl:value-of select="$parentId"/>
-            </field>
+            <field name="_nest_parent_"><xsl:value-of select="$parentId"/></field>
 
-            <field name="bodytext">
-                <xsl:value-of select="."/>
-            </field>
+            <field name="bodytext"><xsl:value-of select="."/></field>
             <field name="bodytext_html">
                 <xsl:copy-of select="node()"/>
             </field>
-            <field name="text_ngram">
-                <xsl:value-of select="."/>
-            </field>
+            <field name="text_ngram"><xsl:value-of select="."/></field>
         </doc>
     </xsl:template>
 
-    <!-- ========== 5) GENERISK MATCH, ignorer alt annet ========== -->
-    <xsl:template match="node()">
-        <!-- Tom for å unngå støy -->
-    </xsl:template>
-
+    <!-- (5) Default pass: ignore all other nodes that don't match above -->
+    <xsl:template match="node()"/>
 </xsl:stylesheet>

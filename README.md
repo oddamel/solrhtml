@@ -32,3 +32,7 @@ xmllint -o dyrevelderdsloven-op-pretty.xml --encode utf-8 --format dyrevelderdsl
 
 curl -X POST -H 'Content-Type: application/xml' 'https://ss929090-2ape21mx-eu-west-1-aws.searchstax.com/solr/juridika-lover-test/update?commit=true' --data-binary @lov-folketrygdloven-op.xml -u $SOLR_USERNAME:$SOLR_PASSWORD
 
+python3 -m venv myenv
+source myenv/bin/activate
+pip install beautifulsoup4
+python count_hierarchy_instances_html.py lovdata/dyrevelferdsloven.html
